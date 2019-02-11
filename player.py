@@ -3,22 +3,37 @@ import os
 import pygame
 import pyganim
 
-GRAVITY = 0.3
-SPEED = 5
+GRAVITY = 0.4
+SPEED = 10
 JUMP = 10
 
-ANIMATION_RIGHT = [('data/black_knight/walk_1.png', 100),
-                   ('data/black_knight/walk_2.png', 100),
-                   ('data/black_knight/walk_3.png', 100),
-                   ('data/black_knight/walk_4.png', 100)]
+ANIMATION_RIGHT = [(pygame.transform.scale(pygame.image.load(os.path.join("data/png/walk", i)), (78, 96)),
+                    pygame.time.Clock().tick(20))
+                   for i in os.listdir("data/png/walk")]
 
-ANIMATION_JUMP = [('data/black_knight/jump_2.png', 3000)]
+ANIMATION_LEFT = [(pygame.transform.flip(pygame.transform.scale(pygame.image.load(
+    os.path.join("data/png/walk", i)), (78, 96)), True, False), pygame.time.Clock().tick(20))
+    for i in os.listdir("data/png/walk")]
 
-ANIMATION_STAY = [('data/black_knight/idle_1.png', 1)]
+ANIMATION_LEFT_ATTACK = [(pygame.transform.flip(pygame.transform.scale(pygame.image.load(
+    os.path.join("data/png/attack", i)), (78, 96)), False, False), pygame.time.Clock().tick(10))
+    for i in os.listdir("data/png/attack")]
 
-ANIMATION_JUMP_LEFT = [('data/black_knight/jump_2.png', 100)]
+ANIMATION_RIGHT_ATTACK = [(pygame.transform.flip(pygame.transform.scale(pygame.image.load(
+    os.path.join("data/png/attack", i)), (78, 96)), True, False), pygame.time.Clock().tick(10))
+    for i in os.listdir("data/png/attack")]
 
-ANIMATION_JUMP_RIGHT = [('data/black_knight/jump_2.png', 100)]
+ANIMATION_JUMP = [(pygame.transform.scale(pygame.image.load(os.path.join("data/png/jump", i)), (78, 96)),
+                   pygame.time.Clock().tick(10))
+                  for i in os.listdir("data/png/jump")]
+
+ANIMATION_STAY = [
+    (pygame.transform.scale(pygame.image.load(os.path.join("data/png/idle", i)), (78, 96)), pygame.time.Clock().tick(5))
+    for i in os.listdir("data/png/idle")]
+
+ANIMATION_JUMP_LEFT = [(pygame.transform.flip(pygame.transform.scale(
+    pygame.image.load(os.path.join("data/png/jump", i)), (78, 96)), True, False), pygame.time.Clock().tick(10))
+    for i in os.listdir("data/png/jump")]
 
 
 class Hero(pygame.sprite.Sprite):
@@ -26,17 +41,29 @@ class Hero(pygame.sprite.Sprite):
         super().__init__(group)
         self.sounds = sounds
         self.speed_x, self.speed_y = 0, 0
-        self.rect = pygame.Rect(x, y, 50, 64)
-        self.image = pygame.Surface((50, 64))
+        self.rect = pygame.Rect(x, y, 55, 90)
+        self.image = pygame.Surface((55, 90), pygame.SRCALPHA, 32)
         self.start_pos = (x, y)
         self.ground = False
         self.right_anim = pyganim.PygAnimation(ANIMATION_RIGHT)
         self.right_anim.play()
+        self.left_anim = pyganim.PygAnimation(ANIMATION_LEFT)
+        self.left_anim.play()
         self.stay_anim = pyganim.PygAnimation(ANIMATION_STAY)
         self.stay_anim.play()
         self.jump_anim = pyganim.PygAnimation(ANIMATION_JUMP)
         self.jump_anim.play()
+        self.jump_left = pyganim.PygAnimation(ANIMATION_JUMP_LEFT)
+        self.jump_left.play()
+        self.attack_anim = pyganim.PygAnimation(ANIMATION_RIGHT_ATTACK)
+        self.attack_anim.play()
+        self.attack_anim_2 = pyganim.PygAnimation(ANIMATION_LEFT_ATTACK)
+        self.attack_anim_2.play()
+        self.sounds["walk"].set_volume(0.3)
+        self.sounds["jump"].set_volume(1.0)
         self.rect.x, self.rect.y = x, y
+        self.last_turn = None
+        self.attack = False
 
     def collision_y(self, sprites_group):
         for sprite in sprites_group:
@@ -57,30 +84,54 @@ class Hero(pygame.sprite.Sprite):
                 if self.speed_x < 0:
                     self.rect.left = sprite.rect.right
 
-    def update(self, group, surface, left=None, up=None):
+    def update(self, group, surface, left=None, up=None, attack=None):
+        self.attack = attack
+        if attack is not None and up is None and left is None and self.ground:
+            print(self.last_turn)
+            if self.last_turn == "left":
+                self.attack_anim.blit(surface, (self.rect.x - 20, self.rect.y))
+            else:
+                self.attack_anim_2.blit(surface, (self.rect.x, self.rect.y))
         if left is not None:
+            self.sounds["walk"].stop()
             self.speed_x = left * SPEED
             if self.ground:
-                self.sounds["walk"].stop()
-                self.right_anim.blit(surface, (self.rect.x, self.rect.y))
                 self.sounds["walk"].play()
+                if left > 0:
+                    self.right_anim.blit(surface, (self.rect.x, self.rect.y))
+                else:
+                    self.left_anim.blit(surface, (self.rect.x - 20, self.rect.y))
             else:
-                self.jump_anim.blit(surface, (self.rect.x, self.rect.y))
+                if left > 0:
+                    self.jump_anim.blit(surface, (self.rect.x, self.rect.y))
+                else:
+                    self.jump_left.blit(surface, (self.rect.x - 20, self.rect.y))
+            if left > 0:
+                self.last_turn = "right"
+            else:
+                self.last_turn = "left"
 
         else:
             self.speed_x = 0
         if up is not None and self.ground:
             self.sounds["jump"].stop()
+            self.sounds["jump"].play()
             self.ground = False
             self.speed_y = up * JUMP
-            self.sounds["jump"].play()
         else:
             self.speed_y += GRAVITY
 
-        if left is None and up is None and self.ground:
+        if left is None and up is None and self.ground and not attack:
+            self.sounds["jump"].stop()
+            self.sounds["walk"].stop()
             self.stay_anim.blit(surface, (self.rect.x, self.rect.y))
         if not self.ground:
-            self.jump_anim.blit(surface, (self.rect.x, self.rect.y))
+            if self.speed_x > 0:
+                self.jump_anim.blit(surface, (self.rect.x, self.rect.y))
+            elif self.speed_x < 0:
+                self.jump_left.blit(surface, (self.rect.x - 20, self.rect.y))
+            else:
+                self.jump_anim.blit(surface, (self.rect.x, self.rect.y))
 
         self.rect.y += self.speed_y
         self.collision_y(group)
