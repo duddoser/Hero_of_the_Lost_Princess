@@ -3,6 +3,8 @@ import os
 import pygame
 import pyganim
 
+from platform import *
+
 GRAVITY = 0.4
 SPEED = 10
 JUMP = 10
@@ -83,11 +85,14 @@ class Hero(pygame.sprite.Sprite):
                     self.rect.right = sprite.rect.left
                 if self.speed_x < 0:
                     self.rect.left = sprite.rect.right
+                if isinstance(sprite, DestroyPlatform) and self.attack:
+                    sprite.kill()
 
     def update(self, group, surface, left=None, up=None, attack=None):
         self.attack = attack
         if attack is not None and up is None and left is None and self.ground:
-            print(self.last_turn)
+            # self.sounds["hit"].stop()
+            # self.sounds["hit"].play()
             if self.last_turn == "left":
                 self.attack_anim.blit(surface, (self.rect.x - 20, self.rect.y))
             else:

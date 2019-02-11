@@ -33,12 +33,33 @@ class LeftPlatform(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = x, y
 
 
+class Coin(pygame.sprite.Sprite):
+    image_platform = pygame.image.load("data/coin/coin_01.png")
+    image_platform = pygame.transform.scale(image_platform, (47, 47))
+
+    def __init__(self, group, x, y):
+        super().__init__(group)
+        self.image = Coin.image_platform
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+
+
 class RightPlatform(pygame.sprite.Sprite):
     image_platform = pygame.image.load("data/tiler.png")
 
     def __init__(self, group, x, y):
         super().__init__(group)
         self.image = RightPlatform.image_platform
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+
+
+class DestroyPlatform(pygame.sprite.Sprite):
+    image_platform = pygame.image.load("data/tiled.png")
+
+    def __init__(self, group, x, y):
+        super().__init__(group)
+        self.image = DestroyPlatform.image_platform
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
 
@@ -67,5 +88,7 @@ def draw_level(filename, platfrom_h, platfrom_w, group_of_sprites, group_of_spri
                 LeftPlatform(group_of_sprites, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)
             elif level[y][x] == "r":
                 RightPlatform(group_of_sprites, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)
-            elif level[y][x] == "s":
-                Sign(group_of_sprites, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)
+            elif level[y][x] == "d":
+                DestroyPlatform(group_of_sprites, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)
+            elif level[y][x] == "c":
+                Coin(group_of_sprites, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)
