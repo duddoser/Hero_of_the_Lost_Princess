@@ -23,11 +23,13 @@ camera = Camera(width, height)
 hero_sprite = pygame.sprite.Group()
 platform_sprites = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
+princess_sprite = pygame.sprite.Group()
+info_sprites = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 bg = pygame.sprite.Group()
 new_game_btn = Button(buttons, "new_game_btn.png", "new_game_btn_2.png", 300, 127, "bookFlip2.ogg")
 settings = Button(buttons, "settings_btn_2.png", "settings_btn.png", 300, 166, "bookFlip2.ogg")
-draw_level("1", 46, 46, platform_sprites, all_sprites)
+draw_level("1", 46, 46, [platform_sprites, all_sprites, hero_sprite, princess_sprite, info_sprites])
 hero = Hero(hero_sprite, 60, 60, Sounds().return_dict_of_sounds())
 hero.add(all_sprites)
 cursor_group = pygame.sprite.Group()
@@ -42,6 +44,7 @@ clock = pygame.time.Clock()
 fps = 40
 left_state, up_state, attack = None, None, None
 running = True
+print([sprite for sprite in all_sprites])
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -75,12 +78,22 @@ while running:
             left_state = -1
         if pygame.key.get_pressed()[pygame.K_d]:
             left_state = 1
+        if pygame.key.get_pressed()[pygame.K_TAB]:
+            pass
         if pygame.key.get_pressed()[pygame.K_r]:
-            hero.reload()
+            for el in platform_sprites:
+                all_sprites.remove(el)
+                platform_sprites.remove(el)
+            for el in info_sprites:
+                info_sprites.remove(el)
+            for sprite in princess_sprite:
+                sprite.reload()
+            hero.reload([platform_sprites, all_sprites, hero_sprite, princess_sprite, info_sprites])
         if pygame.key.get_pressed()[pygame.K_f]:
             attack = True
         all_sprites.draw(screen)
-        hero_sprite.update(platform_sprites, screen, left_state, up_state, attack)
+        hero_sprite.update([platform_sprites], screen, left_state, up_state, attack)
+        princess_sprite.update(platform_sprites)
         camera.update(hero)
         for sprite in all_sprites:
             camera.apply(sprite)

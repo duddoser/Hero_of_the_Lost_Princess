@@ -5,7 +5,7 @@ import pyganim
 
 from platform import *
 
-GRAVITY = 0.4
+GRAVITY = 0.3
 SPEED = 10
 JUMP = 10
 
@@ -30,7 +30,7 @@ ANIMATION_JUMP = [(pygame.transform.scale(pygame.image.load(os.path.join("data/p
                   for i in os.listdir("data/png/jump")]
 
 ANIMATION_STAY = [
-    (pygame.transform.scale(pygame.image.load(os.path.join("data/png/idle", i)), (78, 96)), pygame.time.Clock().tick(5))
+    (pygame.transform.scale(pygame.image.load(os.path.join("data/png/idle", i)), (78, 96)), 100)
     for i in os.listdir("data/png/idle")]
 
 ANIMATION_JUMP_LEFT = [(pygame.transform.flip(pygame.transform.scale(
@@ -39,12 +39,13 @@ ANIMATION_JUMP_LEFT = [(pygame.transform.flip(pygame.transform.scale(
 
 
 class Hero(pygame.sprite.Sprite):
+
     def __init__(self, group, x, y, sounds):
         super().__init__(group)
         self.sounds = sounds
         self.speed_x, self.speed_y = 0, 0
-        self.rect = pygame.Rect(x, y, 55, 90)
-        self.image = pygame.Surface((55, 90), pygame.SRCALPHA, 32)
+        self.rect = pygame.Rect(x, y, 55, 85)
+        self.image = pygame.Surface((55, 85), pygame.SRCALPHA, 32)
         self.start_pos = (x, y)
         self.ground = False
         self.right_anim = pyganim.PygAnimation(ANIMATION_RIGHT)
@@ -69,7 +70,7 @@ class Hero(pygame.sprite.Sprite):
 
     def collision_y(self, sprites_group):
         for sprite in sprites_group:
-            if pygame.sprite.collide_rect(sprite, self):
+            if pygame.sprite.collide_rect(sprite, self) and not isinstance(sprite, Sign):
                 if self.speed_y > 0:
                     self.ground = True
                     self.speed_y = 0
@@ -80,7 +81,7 @@ class Hero(pygame.sprite.Sprite):
 
     def collision_x(self, sprites_group):
         for sprite in sprites_group:
-            if pygame.sprite.collide_rect(sprite, self):
+            if pygame.sprite.collide_rect(sprite, self) and not isinstance(sprite, Sign):
                 if self.speed_x > 0:
                     self.rect.right = sprite.rect.left
                 if self.speed_x < 0:
@@ -88,11 +89,15 @@ class Hero(pygame.sprite.Sprite):
                 if isinstance(sprite, DestroyPlatform) and self.attack:
                     sprite.kill()
 
-    def update(self, group, surface, left=None, up=None, attack=None):
+    def update(self, group_collide, surface, left=None, up=None, attack=None):
         self.attack = attack
         if attack is not None and up is None and left is None and self.ground:
-            # self.sounds["hit"].stop()
-            # self.sounds["hit"].play()
+            self.rect.width += 10
+            for sprite in group_collide[0]:
+                if pygame.sprite.collide_rect(sprite, self):
+                    if isinstance(sprite, DestroyPlatform):
+                        sprite.kill()
+            self.rect.width -= 10
             if self.last_turn == "left":
                 self.attack_anim.blit(surface, (self.rect.x - 20, self.rect.y))
             else:
@@ -139,11 +144,12 @@ class Hero(pygame.sprite.Sprite):
                 self.jump_anim.blit(surface, (self.rect.x, self.rect.y))
 
         self.rect.y += self.speed_y
-        self.collision_y(group)
+        self.collision_y(group_collide[0])
 
         self.rect.x += self.speed_x
-        self.collision_x(group)
+        self.collision_x(group_collide[0])
 
-    def reload(self):
+    def reload(self, all_sp):
+        draw_level("1", 46, 46, all_sp)
         self.rect.x, self.rect.y = self.start_pos[0], self.start_pos[1]
         self.speed_x, self.speed_y = 0, 0
