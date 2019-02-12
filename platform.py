@@ -3,6 +3,7 @@ import os
 import pygame
 
 from princess import Princess
+from boss import Troll
 
 
 class Platform(pygame.sprite.Sprite):
@@ -79,11 +80,12 @@ class Sign(pygame.sprite.Sprite):
 
 
 def draw_level(filename, platfrom_h, platfrom_w, sprtie_groups):
-    group_of_sprites, group_of_sprites_2, hero_sprite, princess_sprite, info_sprites = sprtie_groups[0],\
+    group_of_sprites, group_of_sprites_2, hero_sprite, princess_sprite, info_sprites, boss = sprtie_groups[0],\
                                                                                        sprtie_groups[1],\
                                                                                        sprtie_groups[2],\
                                                                                        sprtie_groups[3],\
-                                                                                       sprtie_groups[4]
+                                                                                       sprtie_groups[4],\
+                                                                                       sprtie_groups[5]
     fullname = os.path.join('data/levels', "{}.txt".format(filename))
     with open(fullname, mode="r") as level_in:
         level = [i.rstrip() for i in level_in.readlines()]
@@ -105,3 +107,5 @@ def draw_level(filename, platfrom_h, platfrom_w, sprtie_groups):
                 Coin(group_of_sprites, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)
             elif level[y][x] == "P":
                 Princess(princess_sprite, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)
+            elif level[y][x] == "B":
+                Troll(boss, platfrom_w * x, platfrom_h * y).add(group_of_sprites_2)

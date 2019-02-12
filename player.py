@@ -1,13 +1,16 @@
 import os
+from time import time
 
 import pygame
 import pyganim
 
 from platform import *
+from boss import Troll
 
 GRAVITY = 0.3
 SPEED = 10
 JUMP = 10
+HURT_TIMEOUT = 3
 
 ANIMATION_RIGHT = [(pygame.transform.scale(pygame.image.load(os.path.join("data/png/walk", i)), (78, 96)),
                     pygame.time.Clock().tick(20))
@@ -46,8 +49,14 @@ class Hero(pygame.sprite.Sprite):
         self.speed_x, self.speed_y = 0, 0
         self.rect = pygame.Rect(x, y, 55, 85)
         self.image = pygame.Surface((55, 85), pygame.SRCALPHA, 32)
+        self.health = 100
+        self.health_image = pygame.Surface((self.health, 20))
+        self.health_image.fill(pygame.Color("red"))
+        self.health_rect = self.health_image.get_rect()
+        self.health_rect.x, self.health_rect.y = 5, 0
         self.start_pos = (x, y)
         self.ground = False
+        self.time_hurt = time()
         self.right_anim = pyganim.PygAnimation(ANIMATION_RIGHT)
         self.right_anim.play()
         self.left_anim = pyganim.PygAnimation(ANIMATION_LEFT)
@@ -67,6 +76,21 @@ class Hero(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = x, y
         self.last_turn = None
         self.attack = False
+
+    def collide_boss(self, group):
+        for sprite in group:
+            if pygame.sprite.collide_rect(sprite, self) and isinstance(sprite, Troll):
+                if self.time_hurt is not None:
+                    if round(time()) - round(self.time_hurt) > HURT_TIMEOUT:
+                        self.health -= 50
+                        self.time_hurt = time()
+                else:
+                    self.time_hurt = time()
+
+    def health_check(self):
+        if self.health <= 0:
+            self.kill()
+            raise SystemExit
 
     def collision_y(self, sprites_group):
         for sprite in sprites_group:
@@ -89,7 +113,13 @@ class Hero(pygame.sprite.Sprite):
                 if isinstance(sprite, DestroyPlatform) and self.attack:
                     sprite.kill()
 
+    def draw_health(self, surface):
+        surface.blit(self.health_image, (0, 5))
+        self.draw_text(surface, "Health {}%".format(round(self.health)))
+
     def update(self, group_collide, surface, left=None, up=None, attack=None):
+        self.health_rect.width = self.health
+        self.draw_health(surface)
         self.attack = attack
         if attack is not None and up is None and left is None and self.ground:
             self.rect.width += 10
@@ -148,8 +178,17 @@ class Hero(pygame.sprite.Sprite):
 
         self.rect.x += self.speed_x
         self.collision_x(group_collide[0])
+        self.collide_boss(group_collide[1])
+        self.health_check()
 
     def reload(self, all_sp):
         draw_level("1", 46, 46, all_sp)
         self.rect.x, self.rect.y = self.start_pos[0], self.start_pos[1]
         self.speed_x, self.speed_y = 0, 0
+
+    def draw_text(self, surface, text):
+        font = pygame.font.Font("CloisterBlack.ttf", 19)
+        text = font.render(text, 1, pygame.Color("white"))
+        text_x = 0
+        text_y = 2
+        surface.blit(text, (text_x, text_y))

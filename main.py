@@ -10,6 +10,7 @@ from platform import draw_level
 from sounds import Sounds
 from button import Button
 from background import Background
+from boss import Troll
 
 
 pygame.init()
@@ -21,6 +22,7 @@ background_music = ["data/background_music_1.ogg", "data/background_music_2.ogg"
 back_m = pygame.mixer.Sound(choice(background_music))
 camera = Camera(width, height)
 hero_sprite = pygame.sprite.Group()
+boss_sprite = pygame.sprite.Group()
 platform_sprites = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 princess_sprite = pygame.sprite.Group()
@@ -29,7 +31,7 @@ buttons = pygame.sprite.Group()
 bg = pygame.sprite.Group()
 new_game_btn = Button(buttons, "new_game_btn.png", "new_game_btn_2.png", 300, 127, "bookFlip2.ogg")
 settings = Button(buttons, "settings_btn_2.png", "settings_btn.png", 300, 166, "bookFlip2.ogg")
-draw_level("1", 46, 46, [platform_sprites, all_sprites, hero_sprite, princess_sprite, info_sprites])
+draw_level("1", 46, 46, [platform_sprites, all_sprites, hero_sprite, princess_sprite, info_sprites, boss_sprite])
 hero = Hero(hero_sprite, 60, 60, Sounds().return_dict_of_sounds())
 hero.add(all_sprites)
 cursor_group = pygame.sprite.Group()
@@ -88,12 +90,13 @@ while running:
                 info_sprites.remove(el)
             for sprite in princess_sprite:
                 sprite.reload()
-            hero.reload([platform_sprites, all_sprites, hero_sprite, princess_sprite, info_sprites])
+            hero.reload([platform_sprites, all_sprites, hero_sprite, princess_sprite, info_sprites, boss_sprite])
         if pygame.key.get_pressed()[pygame.K_f]:
             attack = True
         all_sprites.draw(screen)
-        hero_sprite.update([platform_sprites], screen, left_state, up_state, attack)
+        hero_sprite.update([platform_sprites, all_sprites], screen, left_state, up_state, attack)
         princess_sprite.update(platform_sprites)
+        boss_sprite.update(platform_sprites, screen)
         camera.update(hero)
         for sprite in all_sprites:
             camera.apply(sprite)
